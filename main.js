@@ -32,7 +32,6 @@ const gameEndBtn = document.querySelector("#gameEndBtn");
 const gameRestartBtn = document.querySelector("#gameRestartBtn");
 const gameEndScoreSpan = document.querySelector("#gameEndScoreSpan");
 const gameTimeLivedSpan = document.querySelector("#gameTimeLivedSpan");
-const livedTimeText = document.querySelector("#livedTimeText");
 const pontoText = document.querySelector("#pontoText");
 const lifeText = document.querySelector("#lifeText");
 const levelProgressBar = document.querySelector("#progress-lvl-bar");
@@ -65,7 +64,6 @@ class GameScene extends Phaser.Scene {
     this.textTime;
     this.timedEvent;
     this.starterTimer = 0;
-    this.livedTime;
     this.particulaSpace;
     this.particulaEnemyDeath;
     this.particulaEnemyDeathArray = [];
@@ -221,6 +219,7 @@ class GameScene extends Phaser.Scene {
 
     this.physics.add.collider(this.enemies);
     this.physics.add.collider(this.enemiesLvl2);
+    this.physics.add.collider(this.enemies, this.enemiesLvl2);
 
     // PLAYER CONFIGS =====================
     const playerInitialX = this.sys.game.config.width / 2;
@@ -248,6 +247,10 @@ class GameScene extends Phaser.Scene {
     this.cameras.main.scrollX = playerInitialX - this.cameras.main.width / 2;
     this.cameras.main.scrollY = playerInitialY - this.cameras.main.height / 2;
 
+    const worldWidth = this.sys.game.config.width;
+    const worldHeigth = this.sys.game.config.height;
+
+    this.cameras.main.setBounds(0, 0, worldWidth, worldHeigth);
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
 
     this.rastroEmitter.startFollow(
@@ -349,6 +352,22 @@ class GameScene extends Phaser.Scene {
       this
     );
 
+    this.physics.add.overlap(
+      this.enemies,
+      this.player,
+      (player, enemy) => this.enemyHitPlayer(enemy),
+      null,
+      this
+    );
+
+    this.physics.add.overlap(
+      this.enemiesLvl2,
+      this.player,
+      (player, enemy) => this.enemyHitPlayer(enemy),
+      null,
+      this
+    );
+
     gameStartBtn.disabled = false;
   }
 
@@ -361,9 +380,6 @@ class GameScene extends Phaser.Scene {
       gameStartBtn.disabled = false;
     });
 
-    this.livedTime = Math.floor((this.time.now - this.starterTimer) / 1000);
-
-    livedTimeText.innerText = `Tempo vivo: ${this.livedTime} seg`;
     pontoText.innerText = `Pontos: ${this.points}`;
     lifeText.innerText = "❤️".repeat(this.player.vida);
 
@@ -752,7 +768,6 @@ class GameScene extends Phaser.Scene {
   }
 
   playGame() {
-    this.starterTimer = this.time.now;
     this.shootTimer = this.time.now;
     this.scene.resume("scene-game");
 
@@ -763,11 +778,11 @@ class GameScene extends Phaser.Scene {
     this.playerLevel = 0;
     this.playerXp = 0;
     levelProgressBar.style.width = 0 + "%";
+
   }
 
   gameOver() {
     gameEndScoreSpan.textContent = `Pontos: ${this.points}`;
-    gameTimeLivedSpan.textContent = `Tempo: ${this.livedTime.toString()} seg`;
     gameEndDiv.style.display = "flex";
 
     this.resetGame();
@@ -775,7 +790,6 @@ class GameScene extends Phaser.Scene {
 
   resetGame() {
     this.points = 0;
-    this.livedTime = 0;
     this.playerLevel = 0;
     this.playerXp = 0;
     this.bgMusic.stop();
